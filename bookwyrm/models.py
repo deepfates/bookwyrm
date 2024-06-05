@@ -91,6 +91,8 @@ class Bookwyrm(BaseModel):
         chunks = [TextChunk(**chunk) for chunk in data['chunks']]
         embeddings = np.array(data['embeddings'])
         return cls(documents=documents, chunks=chunks, embeddings=embeddings)
+    
+    
 
 class NumpyEncoder(json.JSONEncoder):
     """

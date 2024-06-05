@@ -2,6 +2,7 @@
 # https://github.com/replicate/cog/blob/main/docs/python.md
 
 from typing import List
+import asyncio
 from cog import BasePredictor, Input
 
 
@@ -13,5 +14,6 @@ class Predictor(BasePredictor):
         self,
         urls: List[str] = Input(description="List of URLs to process.", default=test_tasks)
     ) -> dict:
-        output = process_documents(urls)
+        loop = asyncio.get_event_loop()
+        output = loop.run_until_complete(process_documents(urls))
         return {"output": output.to_json()}

@@ -36,7 +36,10 @@ TOKEN = os.getenv('GITHUB_TOKEN', 'default_token_here')
 if TOKEN == 'default_token_here':
     raise EnvironmentError("GITHUB_TOKEN environment variable not set.")
 
-headers = {"Authorization": f"token {TOKEN}"}
+headers = {
+    "Accept": "application/vnd.github.v3+json",
+    "Authorization": f"token {TOKEN}"
+    }
 
 
 def create_document(text, source, metadata=None):
@@ -50,6 +53,57 @@ def create_document(text, source, metadata=None):
         num_chars=len(text),
         num_tokens=get_token_count(text)
     )
+import time
+
+async def handle_rate_limit(response):
+    if response.status == 403 and "X-RateLimit-Remaining" in response.headers:
+        remaining = int(response.headers["X-RateLimit-Remaining"])
+        if remaining == 0:
+            reset_time = int(response.headers["X-RateLimit-Reset"])
+            sleep_time = max(0, reset_time - time.time())
+            logging.info(f"Rate limit exceeded. Sleeping for {sleep_time} seconds.")
+            await asyncio.sleep(sleep_time)
+
+async def process_file_in_repo(file, repo_content, session):
+    logging.info(f"Processing {file['path']}...")
+
+    temp_file = f"temp_{file['name']}"
+    await download_file(file["download_url"], temp_file, session)
+
+    repo_content.append(f"# {'-' * 3}\n")
+    repo_content.append(f"# Filename: {file['path']}\n")
+    repo_content.append(f"# {'-' * 3}\n\n")
+
+    if file["name"].endswith(".ipynb"):
+        repo_content.append(process_ipynb_file(temp_file))
+    else:
+        with open(temp_file, "r", encoding='utf-8', errors='ignore') as f:
+            repo_content.append(f.read())
+
+    repo_content.append("\n\n")
+    os.remove(temp_file)
+
+async def process_directory(url, repo_content, session):
+    async with session.get(url, headers=headers) as response:
+        await handle_rate_limit(response)
+        response.raise_for_status()
+        files = await response.json()
+
+        tasks = []
+        for file in files:
+            if file["type"] == "file" and is_allowed_filetype(file["name"]):
+                tasks.append(process_file_in_repo(file, repo_content, session))
+            elif file["type"] == "dir":
+                tasks.append(process_directory(file["url"], repo_content, session))
+
+        await asyncio.gather(*tasks)
+
+async def download_file(url, dest, session):
+    async with session.get(url) as response:
+        await handle_rate_limit(response)
+        response.raise_for_status()
+        with open(dest, 'wb') as f:
+            f.write(await response.read())
 
 async def process_github_repo(repo_url) -> Document:
     api_base_url = "https://api.github.com/repos/"
@@ -64,47 +118,13 @@ async def process_github_repo(repo_url) -> Document:
     if subdirectory:
         contents_url = f"{contents_url}/{subdirectory}"
 
-    headers = {"Accept": "application/vnd.github.v3+json"}
     repo_content: List[str] = []
-
-    async def process_directory(url, repo_content, session):
-        async with session.get(url, headers=headers) as response:
-            response.raise_for_status()
-            files = await response.json()
-
-            for file in files:
-                if file["type"] == "file" and is_allowed_filetype(file["name"]):
-                    logging.info(f"Processing {file['path']}...")
-
-                    temp_file = f"temp_{file['name']}"
-                    await download_file(file["download_url"], temp_file, session)
-
-                    repo_content.append(f"# {'-' * 3}\n")
-                    repo_content.append(f"# Filename: {file['path']}\n")
-                    repo_content.append(f"# {'-' * 3}\n\n")
-
-                    if file["name"].endswith(".ipynb"):
-                        repo_content.append(process_ipynb_file(temp_file))
-                    else:
-                        with open(temp_file, "r", encoding='utf-8', errors='ignore') as f:
-                            repo_content.append(f.read())
-
-                    repo_content.append("\n\n")
-                    os.remove(temp_file)
-                elif file["type"] == "dir":
-                    await process_directory(file["url"], repo_content, session)
 
     async with aiohttp.ClientSession() as session:
         await process_directory(contents_url, repo_content, session)
 
     logging.info("All files processed.")
     return create_document("\n".join(repo_content), repo_url)
-
-async def download_file(url, dest, session):
-    async with session.get(url) as response:
-        response.raise_for_status()
-        with open(dest, 'wb') as f:
-            f.write(await response.read())
 
 def is_allowed_filetype(filename):
     allowed_extensions = ['.py', '.txt', '.js', '.tsx', '.ts', '.md', '.cjs', '.html', '.json', '.ipynb', '.h', '.localhost', '.sh', '.yaml', '.example']
@@ -134,7 +154,6 @@ async def process_github_pull_request(pull_request_url) -> Document:
 
         # Make API requests to retrieve pull request information
         api_base_url = f"https://api.github.com/repos/{repo_owner}/{repo_name}/pulls/{pull_request_number}"
-        headers = {"Accept": "application/vnd.github.v3+json"}
 
         # Retrieve pull request details
         async with session.get(api_base_url, headers=headers) as response:
@@ -199,7 +218,6 @@ async def process_github_issue(issue_url) -> Document:
 
         # Make API requests to retrieve issue information
         api_base_url = f"https://api.github.com/repos/{repo_owner}/{repo_name}/issues/{issue_number}"
-        headers = {"Accept": "application/vnd.github.v3+json"}
 
         # Retrieve issue details
         async with session.get(api_base_url, headers=headers) as response:
@@ -243,26 +261,32 @@ async def process_arxiv_pdf(arxiv_abs_url) -> Document:
 
     return create_document(' '.join(text), arxiv_abs_url)
 
+async def process_file(file_path, output):
+    logging.info(f"Processing {file_path}...")
+
+    output.append(f"# {'-' * 3}\n")
+    output.append(f"# Filename: {file_path}\n")
+    output.append(f"# {'-' * 3}\n\n")
+
+    if file_path.endswith(".ipynb"):
+        output.append(process_ipynb_file(file_path))
+    else:
+        with open(file_path, "r", encoding='utf-8', errors='ignore') as f:
+            output.append(f.read())
+
+    output.append("\n\n")
+
 async def process_local_folder(local_path) -> Document:
-    output = []
+    output: List[str] = []
+    tasks = []
+
     for root, dirs, files in os.walk(local_path):
         for file in files:
             if is_allowed_filetype(file):
-                logging.info(f"Processing {os.path.join(root, file)}...")
-
-                output.append(f"# {'-' * 3}\n")
-                output.append(f"# Filename: {os.path.join(root, file)}\n")
-                output.append(f"# {'-' * 3}\n\n")
-
                 file_path = os.path.join(root, file)
+                tasks.append(process_file(file_path, output))
 
-                if file.endswith(".ipynb"):
-                    output.append(process_ipynb_file(file_path))
-                else:
-                    with open(file_path, "r", encoding='utf-8', errors='ignore') as f:
-                        output.append(f.read())
-
-                output.append("\n\n")
+    await asyncio.gather(*tasks)
 
     final_text = "\n".join(output)
     return create_document(final_text, local_path)
@@ -440,11 +464,8 @@ async def scrape_async(tasks) -> List[Document]:
     processed_data_list = await asyncio.gather(*[process_task(task) for task in tasks])
     return processed_data_list
 
-def scrape(tasks = test_tasks) -> List[Document]:
-
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
-    processed_data = loop.run_until_complete(scrape_async(tasks))
+async def scrape(tasks = test_tasks) -> List[Document]:
+    processed_data = await scrape_async(tasks)
     return processed_data
     
 if __name__ == "__main__":

@@ -37,7 +37,7 @@ def chunk(documents: List[Document], window_size: int = 800, overlap: int = 0) -
     logging.info(f"Chunked {len(chunks)} chunks")
     return chunks
 
-def encode(chunks: List[TextChunk]) -> np.ndarray:
+async def encode(chunks: List[TextChunk]) -> np.ndarray:
     """
     Encode the chunks using the embedding API.
     The embedding API takes a list of texts and returns a list of embeddings.
@@ -52,7 +52,7 @@ def encode(chunks: List[TextChunk]) -> np.ndarray:
     texts = [chunk.text for chunk in chunks]
     logging.info(f"Encoding {len(chunks)} chunks")
     try:
-        embeddings = embedding_api(texts)
+        embeddings = await embedding_api(texts)
         logging.info(embeddings)
         logging.info(f"Received {len(embeddings)} embeddings")
         logging.info(f"Embedding shape: {embeddings[0].shape}")
@@ -63,7 +63,7 @@ def encode(chunks: List[TextChunk]) -> np.ndarray:
         logging.error(f"Error encoding chunks: {e}")
         return np.array([])
 
-def process_chunks(documents: List[Document]) -> np.ndarray:
+async def process_chunks(documents: List[Document]) -> np.ndarray:
     """
     Process the documents by chunking and encoding them.
 
@@ -75,12 +75,19 @@ def process_chunks(documents: List[Document]) -> np.ndarray:
     """
     logging.info("Starting to process documents")
     chunks = chunk(documents)
-    embeddings = encode(chunks)
+    embeddings = await encode(chunks)
     logging.info("Finished processing documents")
     return embeddings
 
+
+
 if __name__ == "__main__":
-    from scrape import scrape
-    processed_data = scrape()
-    result = process_chunks(processed_data)
-    print(len(result))
+    import asyncio
+    from .scrape import scrape
+
+    async def main():
+        processed_data = scrape()
+        result = await process_chunks(processed_data)
+        print(len(result))
+
+    asyncio.run(main())

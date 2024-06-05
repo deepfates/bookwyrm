@@ -5,7 +5,7 @@ from .process import chunk, encode
 from .models import DocumentRecord, Bookwyrm
 from .utils import test_tasks
 
-def process_documents(urls: list) -> Bookwyrm:
+async def process_documents(urls: list) -> Bookwyrm:
     """
     Process the documents by chunking and encoding them.
 
@@ -15,9 +15,9 @@ def process_documents(urls: list) -> Bookwyrm:
     Returns:
         dict: Dictionary with keys 'documents', 'chunks', and 'embeddings'.
     """
-    documents = scrape(urls)
+    documents = await scrape(urls)
     chunks = chunk(documents)
-    data = encode(chunks) 
+    data = await encode(chunks) 
     logging.info("Finished processing documents")
     logging.info(f"Embeddings shape: {data.shape}")
     logging.info(f"Documents: {len(documents)}")
@@ -33,12 +33,13 @@ def process_documents(urls: list) -> Bookwyrm:
 
     return bookwyrm
 
-def main():
+async def main():
     urls = test_tasks
-    output = process_documents(urls)
+    output = await process_documents(urls)
     return output 
 
 if __name__ == "__main__":
-    out = main()
+    import asyncio
+    out = asyncio.run(main())
     with open("wyrm.json", "w") as f:       
         f.write(out.to_json())
