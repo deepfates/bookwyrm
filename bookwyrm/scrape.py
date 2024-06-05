@@ -1,14 +1,15 @@
 import asyncio
+import time
+
 from typing import List
 from urllib.parse import urlparse
-import aiohttp
 import re
 import os
 import logging
+from io import BytesIO
 
 from bs4 import BeautifulSoup
 from PyPDF2 import PdfReader
-from io import BytesIO
 from youtube_transcript_api import YouTubeTranscriptApi
 from youtube_transcript_api.formatters import TextFormatter
 from nbconvert import PythonExporter
@@ -16,13 +17,13 @@ import nbformat
 import nltk
 from nltk.corpus import stopwords
 
+from dotenv import load_dotenv
+
 from .models import Document
 from .utils import get_token_count, test_tasks
 
-from dotenv import load_dotenv
-
 # Load the .env file
-load_dotenv() 
+load_dotenv()
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -34,7 +35,7 @@ stop_words = set(stopwords.words("english"))
 
 TOKEN = os.getenv('GITHUB_TOKEN', 'default_token_here')
 if TOKEN == 'default_token_here':
-    raise EnvironmentError("GITHUB_TOKEN environment variable not set.")
+    logging.warning("GITHUB_TOKEN environment variable not set. Using default token.")
 
 headers = {
     "Accept": "application/vnd.github.v3+json",
@@ -53,7 +54,6 @@ def create_document(text, source, metadata=None):
         num_chars=len(text),
         num_tokens=get_token_count(text)
     )
-import time
 
 async def handle_rate_limit(response):
     if response.status == 403 and "X-RateLimit-Remaining" in response.headers:
