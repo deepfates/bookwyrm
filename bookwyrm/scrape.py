@@ -16,8 +16,8 @@ import nbformat
 import nltk
 from nltk.corpus import stopwords
 
-from models import Document
-from utils import get_token_count, test_tasks
+from .models import Document
+from .utils import get_token_count, test_tasks
 
 from dotenv import load_dotenv
 

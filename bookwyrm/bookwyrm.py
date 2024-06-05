@@ -1,17 +1,15 @@
-from scrape import scrape
-from process import chunk, encode
-from models import DocumentRecord, Bookwyrm
 import logging
 
-
-
-from utils import test_tasks
+from .scrape import scrape
+from .process import chunk, encode
+from .models import DocumentRecord, Bookwyrm
+from .utils import test_tasks
 
 def process_documents(urls: list) -> Bookwyrm:
     """
     Process the documents by chunking and encoding them.
 
-    Args:
+    Args: 
         urls (list): List of URLs to process.
 
     Returns:

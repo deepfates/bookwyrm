@@ -6,7 +6,7 @@ from cog import BasePredictor, Input
 
 
 from bookwyrm import process_documents
-from utils import test_tasks
+from bookwyrm.utils import test_tasks
 
 class Predictor(BasePredictor):
     def predict(

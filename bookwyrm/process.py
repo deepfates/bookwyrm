@@ -3,8 +3,8 @@ import asyncio
 import numpy as np
 from tqdm import tqdm
 import logging
-from utils import embedding_api
-from models import Document, TextChunk
+from .utils import embedding_api
+from .models import Document, TextChunk
 
 def chunk(documents: List[Document], window_size: int = 800, overlap: int = 0) -> List[TextChunk]:
     """
