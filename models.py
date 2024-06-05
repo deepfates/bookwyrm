@@ -1,3 +1,4 @@
+import json
 from pydantic import BaseModel, validator
 from typing import List, Dict
 import numpy as np
@@ -20,23 +21,20 @@ class DocumentRecord(BaseModel):
     index: int
     uri: str
     metadata: Dict
-import base64
-
+    
 class Bookwyrm(BaseModel):
     documents: List[DocumentRecord]
     chunks: List[TextChunk]
-    embeddings: str
+    embeddings: np.ndarray
 
     class Config:
         arbitrary_types_allowed = True
 
-    @validator('embeddings', pre=True)
-    def convert_np_array_to_base64(cls, v):
-        """Convert numpy array to base64 string during model creation"""
-        return base64.b64encode(v.tostring()).decode('utf-8')
+    def to_json(self):
+        return json.dumps(self.dict(), indent=4, cls=NumpyEncoder)
 
-    @validator('embeddings', pre=False)
-    def convert_base64_to_np_array(cls, v):
-        """Convert base64 string back to numpy array when accessing the field"""
-        return np.fromstring(base64.b64decode(v), dtype=np.float32)
-    
+class NumpyEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, np.ndarray):
+            return obj.tolist()
+        return super(NumpyEncoder, self).default(obj)

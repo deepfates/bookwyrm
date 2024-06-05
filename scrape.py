@@ -4,6 +4,7 @@ from urllib.parse import urlparse
 import aiohttp
 import re
 import os
+import logging
 
 from bs4 import BeautifulSoup
 from PyPDF2 import PdfReader
@@ -20,7 +21,11 @@ from utils import get_token_count, test_tasks
 
 from dotenv import load_dotenv
 
+# Load the .env file
 load_dotenv() 
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
 
 
 nltk.download("stopwords", quiet=True)
@@ -69,7 +74,7 @@ async def process_github_repo(repo_url) -> Document:
 
             for file in files:
                 if file["type"] == "file" and is_allowed_filetype(file["name"]):
-                    print(f"Processing {file['path']}...")
+                    logging.info(f"Processing {file['path']}...")
 
                     temp_file = f"temp_{file['name']}"
                     await download_file(file["download_url"], temp_file, session)
@@ -92,7 +97,7 @@ async def process_github_repo(repo_url) -> Document:
     async with aiohttp.ClientSession() as session:
         await process_directory(contents_url, repo_content, session)
 
-    print("All files processed.")
+    logging.info("All files processed.")
     return create_document("\n".join(repo_content), repo_url)
 
 async def download_file(url, dest, session):
@@ -243,7 +248,7 @@ async def process_local_folder(local_path) -> Document:
     for root, dirs, files in os.walk(local_path):
         for file in files:
             if is_allowed_filetype(file):
-                print(f"Processing {os.path.join(root, file)}...")
+                logging.info(f"Processing {os.path.join(root, file)}...")
 
                 output.append(f"# {'-' * 3}\n")
                 output.append(f"# Filename: {os.path.join(root, file)}\n")
@@ -340,7 +345,7 @@ async def crawl_and_extract_text(base_url, max_depth=2, include_pdfs=True, ignor
                             if href and href.startswith("http") and is_same_domain(base_url, href) and is_within_depth(base_url, href, max_depth):
                                 await crawl(href, depth + 1)
                     except UnicodeDecodeError:
-                        print(f"Skipping URL {url} due to encoding issues.")
+                        logging.info(f"Skipping URL {url} due to encoding issues.")
                         all_text += f"\n\n# URL: {url}\nSkipped due to encoding issues."
                       
                 elif include_pdfs and "application/pdf" in content_type:
@@ -444,4 +449,4 @@ def scrape(tasks = test_tasks) -> List[Document]:
     
 if __name__ == "__main__":
     processed_data = scrape()
-    print(processed_data)
+    logging.info(processed_data)

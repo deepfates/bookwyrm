@@ -1,12 +1,13 @@
 from scrape import scrape
 from process import chunk, encode
-from models import Document, DocumentRecord, TextChunk, Bookwyrm
-import asyncio
+from models import DocumentRecord, Bookwyrm
 import logging
+
+
 
 from utils import test_tasks
 
-def process_documents(urls: list) -> dict:
+def process_documents(urls: list) -> Bookwyrm:
     """
     Process the documents by chunking and encoding them.
 
@@ -18,7 +19,7 @@ def process_documents(urls: list) -> dict:
     """
     documents = scrape(urls)
     chunks = chunk(documents)
-    data = asyncio.run(encode(chunks))
+    data = encode(chunks) 
     logging.info("Finished processing documents")
     logging.info(f"Embeddings shape: {data.shape}")
     logging.info(f"Documents: {len(documents)}")
@@ -30,12 +31,16 @@ def process_documents(urls: list) -> dict:
         embeddings=data
     )
 
-    return bookwyrm.dict()
+    logging.info("Finished processing documents")
+
+    return bookwyrm
 
 def main():
     urls = test_tasks
-    result = process_documents(urls)
-    print(result)
+    output = process_documents(urls)
+    return output 
 
 if __name__ == "__main__":
-    main()
+    out = main()
+    with open("wyrm.json", "w") as f:       
+        f.write(out.to_json())

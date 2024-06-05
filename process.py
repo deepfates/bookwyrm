@@ -6,9 +6,6 @@ import logging
 from utils import embedding_api
 from models import Document, TextChunk
 
-# Configure logging
-logging.basicConfig(level=logging.INFO)
-
 def chunk(documents: List[Document], window_size: int = 800, overlap: int = 0) -> List[TextChunk]:
     """
     Chunk the documents into smaller pieces.
@@ -40,7 +37,7 @@ def chunk(documents: List[Document], window_size: int = 800, overlap: int = 0) -
     logging.info(f"Chunked {len(chunks)} chunks")
     return chunks
 
-async def encode(chunks: List[TextChunk]) -> np.ndarray:
+def encode(chunks: List[TextChunk]) -> np.ndarray:
     """
     Encode the chunks using the embedding API.
     The embedding API takes a list of texts and returns a list of embeddings.
@@ -55,7 +52,7 @@ async def encode(chunks: List[TextChunk]) -> np.ndarray:
     texts = [chunk.text for chunk in chunks]
     logging.info(f"Encoding {len(chunks)} chunks")
     try:
-        embeddings = await embedding_api(texts)
+        embeddings = embedding_api(texts)
         logging.info(embeddings)
         logging.info(f"Received {len(embeddings)} embeddings")
         logging.info(f"Embedding shape: {embeddings[0].shape}")
@@ -66,7 +63,7 @@ async def encode(chunks: List[TextChunk]) -> np.ndarray:
         logging.error(f"Error encoding chunks: {e}")
         return np.array([])
 
-async def process_chunks(documents: List[Document]) -> np.ndarray:
+def process_chunks(documents: List[Document]) -> np.ndarray:
     """
     Process the documents by chunking and encoding them.
 
@@ -78,12 +75,12 @@ async def process_chunks(documents: List[Document]) -> np.ndarray:
     """
     logging.info("Starting to process documents")
     chunks = chunk(documents)
-    embeddings = await encode(chunks)
+    embeddings = encode(chunks)
     logging.info("Finished processing documents")
     return embeddings
 
 if __name__ == "__main__":
     from scrape import scrape
     processed_data = scrape()
-    result = asyncio.run(process_chunks(processed_data))
+    result = process_chunks(processed_data)
     print(len(result))

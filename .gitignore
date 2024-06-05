@@ -133,3 +133,9 @@ dmypy.json
 
 # Cython debug symbols
 cython_debug/
+
+# Cog temp files
+.cog/
+
+# Test output files
+wyrm.json

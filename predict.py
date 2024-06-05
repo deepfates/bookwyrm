@@ -1,18 +1,11 @@
 # Prediction interface for Cog ⚙️
 # https://github.com/replicate/cog/blob/main/docs/python.md
 
-import logging
+from typing import List
 from cog import BasePredictor, Input
-from bookwyrm import process_documents
-from scrape import scrape
-from process import chunk, encode
-from typing import List, Any
-from models import Document, DocumentRecord, TextChunk, Bookwyrm
-import asyncio
 
-from cog import BasePredictor, Input
-from scrape import scrape
-from process import chunk, encode
+
+from bookwyrm import process_documents
 from utils import test_tasks
 
 class Predictor(BasePredictor):
@@ -20,4 +13,5 @@ class Predictor(BasePredictor):
         self,
         urls: List[str] = Input(description="List of URLs to process.", default=test_tasks)
     ) -> dict:
-        return process_documents(urls)
+        output = process_documents(urls)
+        return {"output": output.to_json()}
