@@ -7,6 +7,7 @@ import re
 import os
 import logging
 from io import BytesIO
+import aiohttp
 
 from bs4 import BeautifulSoup
 from PyPDF2 import PdfReader
