@@ -6,12 +6,12 @@ It takes a list of URLs and outputs a bookwyrm: a long string of docs and embedd
 
 If you've ever wanted to:
 
-> Chat with PDF
-> Chat with repo
-> Chat with video
-> Chat with notebook
-> Chat with website
-> Chat with files
+- Chat with PDF
+- Chat with repo
+- Chat with video
+- Chat with notebook
+- Chat with website
+- Chat with files
 
 Well, this doesn't let you do that. It just process them and spits out chunks of text with embeddings.
 
