@@ -1,4 +1,4 @@
-# 🐉 Bookwyrm 
+# 🐉 bookwyrm 
 
 This is an ingestion pipeline for Github repos, website, documents, and more.
 
