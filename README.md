@@ -13,7 +13,7 @@ If you've ever wanted to:
 - Chat with website
 - Chat with files
 
-Well, this doesn't let you do that. It just process them and spits out chunks of text with embeddings.
+Well, this doesn't let you do that. It just processes them and spits out chunks of text with embeddings.
 
 When you want to actually chat with it, that's what [concat](https://github.com/deepfates/concat) is for.
 
