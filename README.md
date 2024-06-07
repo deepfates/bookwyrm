@@ -19,8 +19,6 @@ When you want to actually chat with it, that's what [concat](https://github.com/
 
 <!-- Describe the different types of data we can scrape -->
 
-# Usage
-
 ## Using with Cog
 Use Cog to run predictions:
 ```sh
@@ -99,3 +97,16 @@ License: MIT
 Copyright: 2024 Jim McMillan
 Files: onefilellm.py
 ```
+
+## About
+The Bookwyrm model is structured as a Python class that contains three main components:
+
+1. **Documents**: A list of DocumentRecord objects, each representing a document with its index, URI, and metadata.
+2. **Chunks**: A list of TextChunk objects, each representing a chunk of text from a document, along with its document index, local index, and global index.
+3. **Embeddings**: A NumPy array containing the embeddings for each text chunk.
+
+This structure is designed to efficiently store and manage large collections of documents, their textual content, and their corresponding embeddings. By chunking the documents into smaller text segments and storing their embeddings, the Bookwyrm model enables efficient similarity searches and retrieval of relevant information from the corpus.
+
+The separation of documents, chunks, and embeddings allows for flexible processing and manipulation of the data, while the use of NumPy arrays for embeddings facilitates efficient vector operations and similarity calculations.
+
+The Bookwyrm model can be serialized to and deserialized from JSON format using the `to_json` and `from_json` methods defined in the `Bookwyrm` class.
