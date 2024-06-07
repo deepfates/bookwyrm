@@ -1,2 +1,2 @@
-from bookwyrm.bookwyrm import process_documents
-from bookwyrm.utils import test_tasks
+from .bookwyrm import process_documents
+from .utils import TEST_TASKS

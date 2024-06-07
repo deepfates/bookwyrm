@@ -1,9 +1,10 @@
 import logging
 
-from .scrape import scrape
+
+from .scrape.main import scrape
 from .process import chunk, encode
 from .models import DocumentRecord, Bookwyrm
-from .utils import test_tasks
+from .utils import TEST_TASKS
 
 async def process_documents(urls: list) -> Bookwyrm:
     """
@@ -34,7 +35,7 @@ async def process_documents(urls: list) -> Bookwyrm:
     return bookwyrm
 
 async def main():
-    urls = test_tasks
+    urls = TEST_TASKS
     output = await process_documents(urls)
     return output 
 

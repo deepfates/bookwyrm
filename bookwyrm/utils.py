@@ -32,7 +32,7 @@ async def embedding_api(texts, batch_size=200):
 
     return np.array(all_embeddings)
 
-test_tasks = [
+TEST_TASKS = [
         # "./data/",
         # "https://github.com/rtyley/small-test-repo",
         # "https://arxiv.org/pdf/2004.07606",
@@ -40,4 +40,5 @@ test_tasks = [
         "https://llm.datasette.io/en/stable/",
         # "10.1053/j.ajkd.2017.08.002",
         # "https://github.com/replicate/replicate-python"
+        # "https://github.com/replicate/replicate-elixir"
     ]
