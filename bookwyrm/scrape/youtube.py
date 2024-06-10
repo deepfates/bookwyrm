@@ -1,6 +1,6 @@
 import re
-from youtube_transcript_api import YouTubeTranscriptApi
-from youtube_transcript_api.formatters import TextFormatter
+from youtube_transcript_api import YouTubeTranscriptApi # type: ignore
+from youtube_transcript_api.formatters import TextFormatter # type: ignore
 
 from bookwyrm.models import Document
 from .document import create_document

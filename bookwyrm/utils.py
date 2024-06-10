@@ -1,5 +1,5 @@
 import numpy as np
-import replicate
+import replicate # type: ignore
 import json 
 import tiktoken
 import asyncio

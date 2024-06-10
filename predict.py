@@ -3,16 +3,16 @@
 
 from typing import List
 import asyncio
-from cog import BasePredictor, Input
+from cog import BasePredictor, Input # type: ignore
 
 
 from bookwyrm import process_documents
-from bookwyrm.utils import test_tasks
+from bookwyrm.utils import TEST_TASKS
 
 class Predictor(BasePredictor):
-    def predict(
+    def predict( # type: ignore
         self,
-        urls: List[str] = Input(description="List of URLs to process.", default=test_tasks)
+        urls: List[str] = Input(description="List of URLs to process.", default=TEST_TASKS)
     ) -> dict:
         loop = asyncio.get_event_loop()
         output = loop.run_until_complete(process_documents(urls))

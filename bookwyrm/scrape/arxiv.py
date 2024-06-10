@@ -15,7 +15,7 @@ async def process_arxiv_pdf(arxiv_abs_url) -> Document:
     text = []
     with BytesIO(pdf_content) as pdf_file:
         pdf_reader = PdfReader(pdf_file)
-        for page in range(len(pdf_reader.pages)):
-            text.append(pdf_reader.pages[page].extract_text())
-
+        for _, page in enumerate(pdf_reader.pages):
+            text.append(page.extract_text())
+    
     return create_document(' '.join(text), arxiv_abs_url)
