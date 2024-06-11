@@ -37,10 +37,10 @@ async def process_documents(urls: list) -> Bookwyrm:
 async def main():
     urls = TEST_TASKS
     output = await process_documents(urls)
-    return output 
+    return output
 
 if __name__ == "__main__":
     import asyncio
     out = asyncio.run(main())
-    with open("wyrm.json", "w") as f:       
+    with open("wyrm.json", "w") as f:      
         f.write(out.to_json())

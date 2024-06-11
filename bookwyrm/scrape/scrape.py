@@ -5,14 +5,6 @@ from urllib.parse import urlparse
 from nbconvert import PythonExporter
 import nbformat
 
-async def handle_rate_limit(response):
-    if response.status == 403 and "X-RateLimit-Remaining" in response.headers:
-        remaining = int(response.headers["X-RateLimit-Remaining"])
-        if remaining == 0:
-            reset_time = int(response.headers["X-RateLimit-Reset"])
-            sleep_time = max(0, reset_time - time.time())
-            logging.info(f"Rate limit exceeded. Sleeping for {sleep_time} seconds.")
-            await asyncio.sleep(sleep_time)
 
 def is_allowed_filetype(filename):
     allowed_extensions = ['.py', '.txt', '.js', '.tsx', '.ts', '.md', '.cjs', '.html', '.json', '.ipynb', '.h', '.localhost', '.sh', '.yaml', '.example']

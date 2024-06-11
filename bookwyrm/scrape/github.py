@@ -1,3 +1,4 @@
+import time
 import os
 import aiohttp
 import asyncio
@@ -7,42 +8,51 @@ from dotenv import load_dotenv
 
 from bookwyrm.models import Document
 from .document import create_document
-from .scrape import handle_rate_limit, is_allowed_filetype, process_ipynb_file
+from .scrape import is_allowed_filetype, process_ipynb_file
 
 
-# Load the .env file
 load_dotenv()
 
 TOKEN = os.getenv('GITHUB_TOKEN', 'default_token_here')
 if TOKEN == 'default_token_here':
     logging.warning("GITHUB_TOKEN environment variable not set. Using default token.")
+else:
+    logging.info("GITHUB_TOKEN environment variable set.")
 
 headers = {
     "Accept": "application/vnd.github.v3+json",
     "Authorization": f"token {TOKEN}"
 }
 
-async def process_file_in_repo(file, repo_content, session):
-    logging.info(f"Processing {file['path']}...")
+RATE_LIMIT_REMAINING = 5000
+RATE_LIMIT_RESET = 0
 
-    temp_file = f"temp_{file['name']}"
-    await download_file(file["download_url"], temp_file, session)
+async def process_file_in_repo(file, repo_content, session, semaphore):
+    async with semaphore:
+        logging.info(f"Processing {file['path']}...")
 
-    repo_content.append(f"# {'-' * 3}\n")
-    repo_content.append(f"# Filename: {file['path']}\n")
-    repo_content.append(f"# {'-' * 3}\n\n")
+        temp_file = f"temp_{file['name']}"
+        await download_file(file["download_url"], temp_file, session)
 
-    if file["name"].endswith(".ipynb"):
-        repo_content.append(process_ipynb_file(temp_file))
-    else:
-        with open(temp_file, "r", encoding='utf-8', errors='ignore') as f:
-            repo_content.append(f.read())
+        repo_content.append(f"# {'-' * 3}\n")
+        repo_content.append(f"# Filename: {file['path']}\n")
+        repo_content.append(f"# {'-' * 3}\n\n")
 
-    repo_content.append("\n\n")
-    os.remove(temp_file)
+        if file["name"].endswith(".ipynb"):
+            repo_content.append(process_ipynb_file(temp_file))
+        else:
+            with open(temp_file, "r", encoding='utf-8', errors='ignore') as f:
+                repo_content.append(f.read())
 
-async def process_directory(url, repo_content, session):
+        repo_content.append("\n\n")
+        os.remove(temp_file)
+
+        # Add a delay between file processing
+        await asyncio.sleep(1)  # Adjust the delay as needed
+
+async def process_directory(url, repo_content, session, semaphore):
     async with session.get(url, headers=headers) as response:
+        print(headers)
         await handle_rate_limit(response)
         response.raise_for_status()
         files = await response.json()
@@ -50,22 +60,14 @@ async def process_directory(url, repo_content, session):
         tasks = []
         for file in files:
             if file["type"] == "file" and is_allowed_filetype(file["name"]):
-                tasks.append(process_file_in_repo(file, repo_content, session))
+                tasks.append(process_file_in_repo(file, repo_content, session, semaphore))
             elif file["type"] == "dir":
-                tasks.append(process_directory(file["url"], repo_content, session))
+                tasks.append(process_directory(file["url"], repo_content, session, semaphore))
 
         await asyncio.gather(*tasks)
 
-def process_directory_sync(url, repo_content, session):
-    response = session.get(url, headers=headers)
-    response.raise_for_status()
-    files = response.json()
-
-    for file in files:
-        if file["type"] == "file" and is_allowed_filetype(file["name"]):
-            process_file_in_repo(file, repo_content, session)
-        elif file["type"] == "dir":
-            process_directory_sync(file["url"], repo_content, session)
+        # Add a delay between directory processing
+        await asyncio.sleep(1)  # Adjust the delay as needed
 
 async def download_file(url, dest, session):
     async with session.get(url) as response:
@@ -89,12 +91,24 @@ async def process_github_repo(repo_url) -> Document:
 
     repo_content: List[str] = []
 
+    semaphore = asyncio.Semaphore(10)  # Limit the number of concurrent requests
     async with aiohttp.ClientSession() as session:
-        await process_directory(contents_url, repo_content, session)
+        await process_directory(contents_url, repo_content, session, semaphore)
 
     logging.info("All files processed.")
     return create_document("\n".join(repo_content), repo_url)
 
+async def handle_rate_limit(response):
+    global RATE_LIMIT_REMAINING, RATE_LIMIT_RESET
+
+    RATE_LIMIT_REMAINING = int(response.headers.get("X-RateLimit-Remaining", 0))
+    RATE_LIMIT_RESET = int(response.headers.get("X-RateLimit-Reset", 0))
+
+    if RATE_LIMIT_REMAINING <= 0:
+        current_time = int(time.time())
+        wait_time = RATE_LIMIT_RESET - current_time + 1
+        logging.warning(f"Rate limit exceeded. Waiting for {wait_time} seconds.")
+        await asyncio.sleep(wait_time)
 
 async def process_github_pull_request(pull_request_url) -> Document:
     async with aiohttp.ClientSession() as session:

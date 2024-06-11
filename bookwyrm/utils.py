@@ -3,12 +3,12 @@ import replicate # type: ignore
 import json 
 import tiktoken
 import asyncio
+from tqdm import tqdm
 
 def get_token_count(text):
     encoding = tiktoken.get_encoding("cl100k_base")
     num_tokens = len(encoding.encode(text))
     return num_tokens
-from tqdm import tqdm
 
 async def embedding_api(texts, batch_size=200):
     all_embeddings = []
@@ -34,11 +34,12 @@ async def embedding_api(texts, batch_size=200):
 
 TEST_TASKS = [
         # "./data/",
-        # "https://github.com/rtyley/small-test-repo",
         # "https://arxiv.org/pdf/2004.07606",
         # "https://www.youtube.com/watch?v=KZ_NlnmPQYk",
-        "https://llm.datasette.io/en/stable/",
+        # "https://llm.datasette.io/en/stable/",
         # "10.1053/j.ajkd.2017.08.002",
+        # "https://github.com/rtyley/small-test-repo",
+        "https://github.com/deepfates/concat"
         # "https://github.com/replicate/replicate-python"
         # "https://github.com/replicate/replicate-elixir"
     ]

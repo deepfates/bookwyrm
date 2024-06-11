@@ -14,7 +14,7 @@ from .youtube import fetch_youtube_transcript
 from .web import crawl_and_extract_text
 from .local import process_local_folder
 # Configure logging
-logging.basicConfig(level=logging.INFO)
+# logging.basicConfig(level=logging.INFO)
 
 def get_task_type(task) -> str:
     parsed_url = urlparse(task)
